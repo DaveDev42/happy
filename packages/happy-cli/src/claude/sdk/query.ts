@@ -108,7 +108,9 @@ export class Query implements AsyncIterableIterator<SDKMessage> {
 
                         this.inputStream.enqueue(message)
                     } catch (e) {
-                        logger.debug(line)
+                        const parseError = e instanceof Error ? e.message : String(e)
+                        logger.debug(`Failed to parse Claude output: ${parseError}`)
+                        logger.debug(`Raw line: ${line}`)
                     }
                 }
             }
@@ -400,7 +402,10 @@ export function query(config: {
         if (config.options?.abort?.aborted) {
             query.setError(new AbortError('Claude Code process aborted by user'))
         } else {
-            query.setError(new Error(`Failed to spawn Claude Code process: ${error.message}`))
+            const errorMsg = error instanceof Error
+                ? (error.message || error.toString())
+                : String(error)
+            query.setError(new Error(`Failed to spawn Claude Code process: ${errorMsg}`))
         }
     })
 

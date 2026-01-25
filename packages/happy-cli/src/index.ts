@@ -631,7 +631,10 @@ ${chalk.bold.cyan('Claude Code Options (from `claude --help`):')}
     try {
       await runClaude(credentials, options);
     } catch (error) {
-      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
+      const errorMsg = error instanceof Error
+        ? (error.message || error.stack || error.toString())
+        : String(error)
+      console.error(chalk.red('Error:'), errorMsg || 'Unknown error (no message)')
       if (process.env.DEBUG) {
         console.error(error)
       }
