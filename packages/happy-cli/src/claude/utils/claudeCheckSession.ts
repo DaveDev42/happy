@@ -22,11 +22,22 @@ export function claudeCheckSession(sessionId: string, path: string) {
 
         try {
             const parsed = JSON.parse(v);
-            // Accept sessions with any of these ID fields (different Claude Code versions)
-            // Check for non-empty strings to handle edge cases robustly
-            return (typeof parsed.uuid === 'string' && parsed.uuid.length > 0) ||        // Claude Code 2.1.x
-                   (typeof parsed.messageId === 'string' && parsed.messageId.length > 0) ||   // Older Claude Code
-                   (typeof parsed.leafUuid === 'string' && parsed.leafUuid.length > 0);      // Summary lines
+
+            // Check for actual conversation messages (user or assistant)
+            // This excludes metadata-only entries like file-history-snapshot
+            const hasConversationMessage = parsed.message &&
+                (parsed.message.role === 'user' || parsed.message.role === 'assistant');
+
+            if (hasConversationMessage) {
+                return true;
+            }
+
+            // Summary entries with leafUuid are also valid (can be resumed by Claude Code)
+            if (parsed.type === 'summary' && typeof parsed.leafUuid === 'string' && parsed.leafUuid.length > 0) {
+                return true;
+            }
+
+            return false;
         } catch (e) {
             // Log parse errors for debugging (following project convention)
             logger.debug(`[claudeCheckSession] Malformed JSON at line ${index + 1}:`, e);
